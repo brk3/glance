@@ -82,6 +82,9 @@ class Controller(controller.BaseController):
         PUT /images/<ID> -- Update image metadata and/or upload image
                             data for a previously-reserved image
         DELETE /images/<ID> -- Delete the image with id <ID>
+        POST /images/<ID>/action -- Perform action on image with id <ID>
+                                    (only 'restore' right now)
+
     """
 
     def __init__(self):
@@ -779,6 +782,40 @@ class Controller(controller.BaseController):
                                 content_type="text/plain")
         else:
             self.notifier.info('image.delete', image)
+
+    def action(self, request, id, body):
+        """
+        Performs action on image
+
+        :param request: The WSGI/Webob Request object
+        :retval There is no response body
+
+        :raises HttpBadRequest if image registry is invalid
+        :raises HttpNotFound if image or any chunk is not available
+        :raises HttpNotAuthorized if image or any chunk is not
+                deleteable by the requesting user
+        """
+        if request.context.read_only:
+            msg = "Read-only access"
+            logger.debug(msg)
+            raise HTTPForbidden(msg, request=request,
+                                content_type="text/plain")
+
+        action = body['action']
+        if action == 'restore':
+            try:
+                registry.restore_image(request.context, id)
+            except exception.NotFound:
+                msg = "Image with identifier %s not found" % id
+                logger.debug(msg)
+                raise HTTPNotFound(msg, request=request,
+                                   content_type='text/plain')
+        else:
+            msg = "Unknown action %s" % action
+            raise HTTPBadRequest(msg, request=request,
+                                 content_type='text/plain')
+
+        return ''
 
     def get_store_or_400(self, request, scheme):
         """

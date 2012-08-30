@@ -1185,6 +1185,26 @@ class TestRegistryClient(base.IsolatedUnitTest):
         self.client.add_member(UUID2, 'pattieblack')
         self.assertTrue(self.client.delete_member(UUID2, 'pattieblack'))
 
+    def test_restore(self):
+        """Tests restoring deleted image"""
+        extra_fixture = {'id': 3,
+                         'status': 'pending_delete',
+                         'saved_status': 'active',
+                         'is_public': True,
+                         'disk_format': 'vhd',
+                         'container_format': 'ovf',
+                         'name': 'asdf',
+                         'size': 19,
+                         'checksum': None}
+
+        glance.registry.db.api.image_create(self.context, extra_fixture)
+
+        self.assertTrue(self.client.restore_image(3))
+
+        data = self.client.get_image(3)
+
+        self.assertEquals(data['status'], 'active')
+
 
 class TestClient(base.IsolatedUnitTest):
 

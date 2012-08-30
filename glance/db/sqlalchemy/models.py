@@ -107,6 +107,7 @@ class Image(BASE, ModelBase):
     container_format = Column(String(20))
     size = Column(BigInteger)
     status = Column(String(30), nullable=False)
+    saved_status = Column(String(30))
     is_public = Column(Boolean, nullable=False, default=False)
     location = Column(Text)
     checksum = Column(String(32))

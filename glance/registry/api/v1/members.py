@@ -300,6 +300,36 @@ def make_member_list(members, **attr_map):
             if not memb.deleted]
 
 
+def action(self, req, id, body):
+    """Restores image pending deletion.
+
+    :param req: Request body.  Ignored.
+    :param id:  The opaque internal identifier for the image
+
+    :retval Returns the updated image information as a mapping,
+
+    """
+    context = None
+    action = body['action']
+    if action == 'restore':
+        try:
+            logger.debug("Restoring image %(id)s" % locals())
+            db_api.image_restore(context, id)
+            return ''
+        except exception.Invalid, e:
+            msg = "Failed to restore image."
+            logger.error(msg)
+            return exc.HTTPBadRequest(msg)
+        except exception.NotFound:
+            raise exc.HTTPNotFound(body='Image not found',
+                                   request=req,
+                                   content_type='text/plain')
+    else:
+        msg = "Unknown action %s." % action
+        logger.error(msg)
+        return exc.HTTPBadRequest(msg)
+
+
 def create_resource():
     """Image members resource factory method."""
     deserializer = wsgi.JSONRequestDeserializer()

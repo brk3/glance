@@ -176,6 +176,14 @@ class RegistryClient(BaseClient):
         image = data['image']
         return image
 
+    def restore_image(self, image_id):
+        """
+        Restores an image that is pending deletion
+        """
+        self.do_request("POST", "/images/%s/action" % image_id,
+                        json.dumps({"action": "restore"}))
+        return True
+
     def get_image_members(self, image_id):
         """Returns a list of membership associations from Registry"""
         res = self.do_request("GET", "/images/%s/members" % image_id)

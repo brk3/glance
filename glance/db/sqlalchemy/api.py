@@ -228,6 +228,31 @@ def image_destroy(context, image_id):
         return image_ref
 
 
+def image_restore(context, image_id):
+    """Restore image that is pending deletion.
+
+    Raises NotFound if image does not exist.
+
+    """
+    session = get_session()
+    with session.begin():
+        try:
+            image_ref = session.query(models.Image).\
+                       options(joinedload(models.Image.properties)).\
+                       filter_by(id=image_id).\
+                       one()
+        except exc.NoResultFound:
+            raise exception.NotFound("No image found with ID %s" % image_id)
+
+        if image_ref['status'] != 'pending_delete':
+            raise exception.ApiError('Image not in pending_delete state', 400)
+
+        image_ref.update({'status': image_ref['saved_status'],
+                          'saved_status': None,
+                          'deleted': False})
+        image_ref.save(session=session)
+
+
 def image_get(context, image_id, session=None, force_show_deleted=False):
     """Get an image or raise if it does not exist."""
     session = session or get_session()

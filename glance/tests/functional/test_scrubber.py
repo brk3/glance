@@ -71,6 +71,34 @@ class TestScrubber(functional.FunctionalTest):
 
         self.stop_servers()
 
+     @functional.runs_sql
+     def test_restore(self):
+         """
+         test that images can be restored after delayed delete
+         """
+
+         def _get_all_pending_delete():
+             sql = "SELECT * FROM images WHERE status = 'pending_delete'"
+             return list(self.run_sql_cmd(sql))
+
+         self.cleanup()
+         registry_db = self.registry_server.sql_connection
+         self.start_servers(delayed_delete=True, sql_connection=registry_db,
+                 daemon=True)
+
+         client = self._get_client()
+         meta = client.add_image(TEST_IMAGE_META, TEST_IMAGE_DATA)
+         id = meta['id']
+         self.assertFalse(_get_all_pending_delete())
+
+         client.delete_image(id)
+         self.assertTrue(_get_all_pending_delete())
+
+         client.restore_image(id)
+         self.assertFalse(_get_all_pending_delete())
+
+         self.stop_servers()
+
     def test_delayed_delete(self):
         """
         test that images don't get deleted immediatly and that the scrubber

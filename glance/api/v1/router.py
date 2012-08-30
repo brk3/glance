@@ -29,7 +29,9 @@ class API(wsgi.Router):
         images_resource = images.create_resource()
 
         mapper.resource("image", "images", controller=images_resource,
-                        collection={'detail': 'GET'})
+                        collection={'detail': 'GET'},
+                        member={'action': 'POST'})
+
         mapper.connect("/", controller=images_resource, action="index")
         mapper.connect("/images/{id}", controller=images_resource,
                        action="meta", conditions=dict(method=["HEAD"]))

@@ -152,6 +152,12 @@ def delete_image_metadata(context, image_id):
     return c.delete_image(image_id)
 
 
+def restore_image(context, image_id):
+    logger.debug(_("Restoring image %s..."), image_id)
+    c = get_registry_client(context)
+    return c.restore_image(image_id)
+
+
 def get_image_members(context, image_id):
     c = get_registry_client(context)
     return c.get_image_members(image_id)
