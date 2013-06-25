@@ -18,13 +18,6 @@
 """Stubouts, mocks and fixtures for the test suite"""
 
 import os
-
-try:
-    import sendfile
-    SENDFILE_SUPPORTED = True
-except ImportError:
-    SENDFILE_SUPPORTED = False
-
 import routes
 import webob
 
@@ -94,23 +87,10 @@ def stub_out_registry_and_store_server(stubs, base_dir, **kwargs):
         def fileno(self):
             return 42
 
-    class FakeSendFile(object):
-
-        def __init__(self, req):
-            self.req = req
-
-        def sendfile(self, o, i, offset, nbytes):
-            os.lseek(i, offset, os.SEEK_SET)
-            prev_len = len(self.req.body)
-            self.req.body += os.read(i, nbytes)
-            return len(self.req.body) - prev_len
-
     class FakeGlanceConnection(object):
 
         def __init__(self, *args, **kwargs):
             self.sock = FakeSocket()
-            self.stub_force_sendfile = kwargs.get('stub_force_sendfile',
-                                                  SENDFILE_SUPPORTED)
 
         def connect(self):
             return True
@@ -124,9 +104,6 @@ def stub_out_registry_and_store_server(stubs, base_dir, **kwargs):
 
         def putrequest(self, method, url):
             self.req = webob.Request.blank(self._clean_url(url))
-            if self.stub_force_sendfile:
-                fake_sendfile = FakeSendFile(self.req)
-                stubs.Set(sendfile, 'sendfile', fake_sendfile.sendfile)
             self.req.method = method
 
         def putheader(self, key, value):
@@ -183,21 +160,8 @@ def stub_out_registry_and_store_server(stubs, base_dir, **kwargs):
         for i in self.source.app_iter:
             yield i
 
-    def fake_sendable(self, body):
-        force = getattr(self, 'stub_force_sendfile', None)
-        if force is None:
-            return self._stub_orig_sendable(body)
-        else:
-            if force:
-                assert glance.common.client.SENDFILE_SUPPORTED
-            return force
-
     stubs.Set(glance.common.client.BaseClient, 'get_connection_type',
               fake_get_connection_type)
-    setattr(glance.common.client.BaseClient, '_stub_orig_sendable',
-            glance.common.client.BaseClient._sendable)
-    stubs.Set(glance.common.client.BaseClient, '_sendable',
-              fake_sendable)
 
 
 def stub_out_registry_server(stubs, **kwargs):

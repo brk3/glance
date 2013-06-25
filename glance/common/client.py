@@ -35,12 +35,6 @@ except ImportError:
     import socket
     import ssl
 
-try:
-    import sendfile
-    SENDFILE_SUPPORTED = True
-except ImportError:
-    SENDFILE_SUPPORTED = False
-
 from glance.common import auth
 from glance.common import exception, utils
 import glance.openstack.common.log as logging
@@ -491,24 +485,17 @@ class BaseClient(object):
             elif _filelike(body) or self._iterable(body):
                 c.putrequest(method, path)
 
-                use_sendfile = self._sendable(body)
-
                 # According to HTTP/1.1, Content-Length and Transfer-Encoding
                 # conflict.
                 for header, value in headers.items():
-                    if use_sendfile or header.lower() != 'content-length':
+                    if header.lower() != 'content-length':
                         c.putheader(header, str(value))
 
-                iter = self.image_iterator(c, headers, body)
-
-                if use_sendfile:
-                    # send actual file without copying into userspace
-                    _sendbody(c, iter)
-                else:
-                    # otherwise iterate and chunk
-                    _chunkbody(c, iter)
+                # iterate and chunk
+                iter = utils.chunkreadable(body)
+                _chunkbody(c, iter)
             else:
-                raise TypeError('Unsupported image type: %s' % body.__class__)
+                raise TypeError('Unsupported body type: %s' % body.__class__)
 
             res = c.getresponse()
 
@@ -546,32 +533,8 @@ class BaseClient(object):
         except (socket.error, IOError) as e:
             raise exception.ClientConnectionError(e)
 
-    def _seekable(self, body):
-        # pipes are not seekable, avoids sendfile() failure on e.g.
-        #   cat /path/to/image | glance add ...
-        # or where add command is launched via popen
-        try:
-            os.lseek(body.fileno(), 0, os.SEEK_CUR)
-            return True
-        except OSError as e:
-            return (e.errno != errno.ESPIPE)
-
-    def _sendable(self, body):
-        return (SENDFILE_SUPPORTED and
-                hasattr(body, 'fileno') and
-                self._seekable(body) and
-                not self.use_ssl)
-
     def _iterable(self, body):
         return isinstance(body, collections.Iterable)
-
-    def image_iterator(self, connection, headers, body):
-        if self._sendable(body):
-            return SendFileIterator(connection, body)
-        elif self._iterable(body):
-            return utils.chunkreadable(body)
-        else:
-            return ImageBodyIterator(body)
 
     def get_status_code(self, response):
         """
