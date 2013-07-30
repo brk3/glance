@@ -199,3 +199,22 @@ class FakeNotifier(object):
 
     def get_logs(self):
         return self.log
+
+
+class FakeLogger(object):
+    # a thread safe logger
+
+    def __init__(self, *args, **kwargs):
+        self.log_dict = dict(error=[], info=[], warning=[], debug=[])
+
+    def error(self, *args, **kwargs):
+        self.log_dict['error'].append((args, kwargs))
+
+    def info(self, *args, **kwargs):
+        self.log_dict['info'].append((args, kwargs))
+
+    def warning(self, *args, **kwargs):
+        self.log_dict['warning'].append((args, kwargs))
+
+    def debug(self, *args, **kwargs):
+        self.log_dict['debug'].append((args, kwargs))

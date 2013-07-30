@@ -55,5 +55,11 @@ setuptools.setup(
                    'glance-manage = glance.cmd.manage:main',
                    'glance-registry = glance.cmd.registry:main',
                    'glance-replicator = glance.cmd.replicator:main',
-                   'glance-scrubber = glance.cmd.scrubber:main']},
+                   'glance-scrubber = glance.cmd.scrubber:main'
+                   ],
+                  'paste.filter_factory': [
+                   'memcache=glance.common.memcache:filter_factory',
+                   'ratelimit=glance.api.middleware.ratelimit:filter_factory',
+                   ],
+                  },
     py_modules=[])
