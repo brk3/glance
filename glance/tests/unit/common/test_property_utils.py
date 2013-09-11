@@ -26,6 +26,12 @@ CONFIG_RULES = [
     'spl_update_prop',
     'spl_update_only_prop',
     'spl_delete_prop',
+    '^x_all_permitted.*',
+    '^x_none_permitted.*',
+    'x_invalid_all_and_none',
+    'x_none_read',
+    'x_none_update',
+    'x_none_delete',
     '.*'
 ]
 
@@ -178,3 +184,67 @@ class TestPropertyRules(utils.BaseTestCase):
         for i in xrange(0, len(property_utils.CONFIG.sections())):
             self.assertEqual(property_utils.CONFIG.sections()[i],
                              self.rules_checker.rules[i][0].pattern)
+
+    def test_check_property_rules_create_all_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertTrue(self.rules_checker.check_property_rules(
+            'x_all_permitted', 'create', ['']))
+
+    def test_check_property_rules_read_all_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertTrue(self.rules_checker.check_property_rules(
+            'x_all_permitted', 'read', ['']))
+
+    def test_check_property_rules_update_all_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertTrue(self.rules_checker.check_property_rules(
+            'x_all_permitted', 'update', ['']))
+
+    def test_check_property_rules_delete_all_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertTrue(self.rules_checker.check_property_rules(
+            'x_all_permitted', 'delete', ['']))
+
+    def test_check_property_rules_create_none_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertFalse(self.rules_checker.check_property_rules(
+            'x_none_permitted', 'create', ['']))
+
+    def test_check_property_rules_read_none_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertFalse(self.rules_checker.check_property_rules(
+            'x_none_permitted', 'read', ['']))
+
+    def test_check_property_rules_update_none_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertFalse(self.rules_checker.check_property_rules(
+            'x_none_permitted', 'update', ['']))
+
+    def test_check_property_rules_delete_none_permitted(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertFalse(self.rules_checker.check_property_rules(
+            'x_none_permitted', 'delete', ['']))
+
+    def test_check_property_rules_create_all_and_none(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.rules_checker.check_property_rules,
+                          'x_invalid_all_and_none', 'create', [''])
+
+    def test_check_property_rules_read_all_and_none(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.rules_checker.check_property_rules,
+                          'x_invalid_all_and_none', 'read', [''])
+
+    def test_check_property_rules_update_all_and_none(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.rules_checker.check_property_rules,
+                          'x_invalid_all_and_none', 'update', [''])
+
+    def test_check_property_rules_delete_all_and_none(self):
+        self.rules_checker = property_utils.PropertyRules()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.rules_checker.check_property_rules,
+                          'x_invalid_all_and_none', 'delete', [''])

@@ -99,6 +99,16 @@ class PropertyRules(object):
 
         for rule_exp, rule in self.rules:
             if rule_exp.search(str(property_name)):
-                if set(roles).intersection(set(rule.get(action))):
+                permitted_roles = rule.get(action)
+                if '@' in permitted_roles and '!' in permitted_roles:
+                    msg = _("Malformed property protection rule '%s': '@' and "
+                            "'!' are mutually exclusive" % property_name)
+                    LOG.error(msg)
+                    raise webob.exc.HTTPInternalServerError(msg)
+                elif '@' in permitted_roles:
+                    return True
+                elif '!' in permitted_roles:
+                    return False
+                elif set(roles).intersection(set(permitted_roles)):
                     return True
         return False
